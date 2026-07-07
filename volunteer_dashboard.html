@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #1d3557; --secondary: #e63946; --success: #2a9d8f; --bg: #f1faee; --text: #333; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); }
+        .navbar { background-color: var(--primary); padding: 15px 40px; display: flex; justify-content: space-between; color: white; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .navbar a { color: white; text-decoration: none; font-weight: bold; background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 5px; transition: 0.3s; }
+        .navbar a:hover { background: var(--secondary); }
+        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        .header-title { border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; color: var(--primary); }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .req-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-top: 5px solid var(--secondary); transition: transform 0.2s; }
+        .req-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .req-card h3 { margin: 0 0 15px; color: var(--primary); display: flex; justify-content: space-between; }
+        .badge { background: #ffeaea; color: var(--secondary); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .info-row { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; color: #555; }
+        .actions { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; transition: 0.2s; text-align: center; }
+        .btn-accept { background-color: var(--success); } .btn-accept:hover { background-color: #21867a; }
+        .btn-reject { background-color: #ccc; color: #333; } .btn-reject:hover { background-color: #bbb; }
+        .distance { font-size: 0.85rem; color: #888; margin-top: 10px; text-align: right; }
+        
+        @keyframes flashHighlight {
+            0% { box-shadow: 0 0 20px rgba(230, 57, 70, 0.6); transform: scale(1.02); }
+            100% { box-shadow: 0 4px 10px rgba(0,0,0,0.08); transform: scale(1); }
+        }
+        .highlight-new { animation: flashHighlight 4s ease-out; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div style="font-size: 1.2rem; font-weight: bold;"><i class="fas fa-user-check"></i> Volunteer Portal</div>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <div class="container">
+        <h2 class="header-title"><i class="fas fa-bell" style="color: var(--secondary);"></i> Action Required: Pending Emergency Requests</h2>
+        
+        <div class="cards-grid">
+            {% for req in requests %}
+            <div class="req-card">
+                <h3>{{ req[3] }} <span class="badge">URGENT</span></h3>
+                <div class="info-row"><i class="fas fa-user"></i> <strong>Name:</strong> {{ req[1] }}</div>
+                <div class="info-row"><i class="fas fa-phone-alt"></i> <strong>Phone:</strong> {{ req[2] }}</div>
+                <div class="info-row">
+                    <i class="fas fa-map-marker-alt"></i> <strong>Location:</strong> 
+                    <a href="https://www.google.com/maps?q={{ req[4] }},{{ req[5] }}" target="_blank" style="color: var(--primary);">View on Map</a>
+                </div>
+                
+                <div class="distance"><i class="fas fa-route"></i> Est. Distance: <b>{{ req[7] }} km</b> away</div>
+                
+                <div class="actions" style="display: flex; gap: 10px; width: 100%;">
+                    <form id="accept-{{ req[0] }}" action="/accept_request/{{ req[0] }}" method="POST" style="flex: 1;">
+                        <button type="button" style="width: 100%;" class="btn btn-accept" onclick="confirmAction('accept-{{ req[0] }}', 'Accept this request?')"><i class="fas fa-check"></i> Accept</button>
+                    </form>
+                    <form id="decline-{{ req[0] }}" action="/decline_request/{{ req[0] }}" method="POST" style="flex: 1;">
+                        <button type="button" style="width: 100%;" class="btn btn-reject" onclick="confirmAction('decline-{{ req[0] }}', 'Decline this request?')"><i class="fas fa-times"></i> Decline</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <p id="no-reqs" style="grid-column: 1 / -1; text-align: center; color: #777; font-size: 1.2rem;">No pending help requests at this time. Thank you for being on standby!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    function confirmAction(formId, text) {
+        Swal.fire({
+            title: 'Confirm Action', text: text, icon: 'question', showCancelButton: true, confirmButtonColor: '#2a9d8f', cancelButtonColor: '#e63946', confirmButtonText: 'Yes, proceed!'
+        }).then((result) => { if (result.isConfirmed) document.getElementById(formId).submit(); });
+    }
+
+    // Action Success Toasts
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('msg')) {
+        const msg = urlParams.get('msg');
+        let title = 'Action Processed';
+        if (msg === 'accepted') { title = '✅ Assigned to you successfully!'; }
+        if (msg === 'declined') { title = '❌ Request Declined!'; }
+        
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: title, showConfirmButton: false, timer: 3500, timerProgressBar: true });
+        window.history.replaceState({}, document.title, "/volunteer_dashboard");
+    }
+
+    // Live Refresh Loop
+    let knownReqIds = new Set();
+    let isFirstVolLoad = true;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('form[id^="accept-"]').forEach(form => {
+            let id = form.id.replace('accept-', '');
+            knownReqIds.add(parseInt(id));
+        });
+        isFirstVolLoad = false;
+    });
+
+    setInterval(() => {
+        fetch('/api/get_pending_requests').then(res => res.json()).then(data => {
+            if(data.requests) updateCards(data.requests);
+        });
+    }, 5000);
+
+    function updateCards(requests) {
+        const grid = document.querySelector('.cards-grid');
+        if (requests.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #777; font-size: 1.2rem;">No pending help requests at this time. Thank you for being on standby!</p>';
+            return;
+        }
+        let html = '';
+        let newRequestsFound = false;
+
+        requests.forEach(req => {
+            let isNew = !isFirstVolLoad && !knownReqIds.has(req.id);
+            if (isNew) newRequestsFound = true;
+            knownReqIds.add(req.id);
+
+            html += `
+            <div class="req-card ${isNew ? 'highlight-new' : ''}">
+                <h3>${req.help_type} <span class="badge">URGENT</span></h3>
+                <div class="info-row"><i class="fas fa-user"></i> <strong>Name:</strong> ${req.name}</div>
+                <div class="info-row"><i class="fas fa-phone-alt"></i> <strong>Phone:</strong> ${req.phone}</div>
+                <div class="info-row">
+                    <i class="fas fa-map-marker-alt"></i> <strong>Location:</strong> 
+                    <a href="https://www.google.com/maps?q=${req.latitude},${req.longitude}" target="_blank" style="color: var(--primary);">View on Map</a>
+                </div>
+                
+                <div class="distance"><i class="fas fa-route"></i> Est. Distance: <b>Live tracking...</b></div>
+                
+                <div class="actions" style="display: flex; gap: 10px; width: 100%;">
+                    <form id="accept-${req.id}" action="/accept_request/${req.id}" method="POST" style="flex: 1;">
+                        <button type="button" style="width: 100%;" class="btn btn-accept" onclick="confirmAction('accept-${req.id}', 'Accept this request?')"><i class="fas fa-check"></i> Accept</button>
+                    </form>
+                    <form id="decline-${req.id}" action="/decline_request/${req.id}" method="POST" style="flex: 1;">
+                        <button type="button" style="width: 100%;" class="btn btn-reject" onclick="confirmAction('decline-${req.id}', 'Decline this request?')"><i class="fas fa-times"></i> Decline</button>
+                    </form>
+                </div>
+            </div>`;
+        });
+        grid.innerHTML = html;
+        
+        if (newRequestsFound) {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: '🚨 New emergency request!', showConfirmButton: false, timer: 5000 });
+            let audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+            audio.play().catch(e => console.log("Audio autoplay blocked by browser"));
+        }
+        isFirstVolLoad = false;
+    }
+    </script>
+</body>
+</html>

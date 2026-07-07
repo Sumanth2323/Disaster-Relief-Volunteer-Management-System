@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Disaster Relief</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1d3557; --secondary: #e63946; --success: #2a9d8f; --bg: #f1faee; --text: #333;
+        }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); display: flex; }
+        .sidebar { width: 250px; background-color: var(--primary); color: white; height: 100vh; position: fixed; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; text-align: center; font-size: 1.5rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar a { color: white; text-decoration: none; padding: 15px 20px; display: block; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .sidebar a:hover { background-color: rgba(255,255,255,0.1); border-left: 4px solid var(--success); }
+        .main-content { margin-left: 250px; padding: 30px; width: calc(100% - 250px); box-sizing: border-box; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .stats { display: flex; gap: 20px; margin-bottom: 30px; }
+        .card { background: white; padding: 25px; border-radius: 12px; flex: 1; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
+        .card i { font-size: 2rem; color: var(--primary); margin-bottom: 10px; }
+        .card h1 { margin: 10px 0 0; color: var(--text); font-size: 2.5rem; }
+        .card h3 { margin: 0; color: #666; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .section-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; } 
+        th, td { border-bottom: 1px solid #eee; padding: 12px 15px; text-align: left; }
+        th { background-color: #f8f9fa; color: #555; font-weight: 600; }
+        .btn { padding: 6px 12px; border-radius: 5px; color: white; text-decoration: none; font-size: 0.9rem; cursor: pointer; border: none; transition: 0.2s; display: inline-block; margin-right: 5px;}
+        .btn-view { background-color: #457b9d; } .btn-view:hover { background-color: #1d3557; }
+        .btn-update { background-color: var(--success); } .btn-update:hover { background-color: #21867a; }
+        .btn-delete { background-color: var(--secondary); } .btn-delete:hover { background-color: #c9302c; }
+        .status-Pending { background-color: #ffeaea; color: var(--secondary); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+        .status-Resolved { background-color: #e5f6e5; color: var(--success); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+        input { padding: 10px; margin: 5px 0; width: calc(50% - 22px); border: 1px solid #ccc; border-radius: 5px; }
+        .add-btn { background-color: var(--primary); padding: 10px 20px; font-size: 1rem; border: none; border-radius: 5px; color: white; cursor: pointer; margin-top: 10px; }
+        
+        @keyframes flashHighlight {
+            0% { background-color: rgba(230, 57, 70, 0.2); }
+            100% { background-color: transparent; }
+        }
+        .highlight-new { animation: flashHighlight 4s ease-out; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header"><i class="fas fa-shield-alt"></i> Admin Panel</div>
+        <a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="#requests"><i class="fas fa-hands-helping"></i> Help Requests</a>
+        <a href="#volunteers"><i class="fas fa-users"></i> Volunteers</a>
+        <a href="/logout" style="margin-top: auto;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h2>System Dashboard</h2>
+            <span><i class="fas fa-user-circle"></i> Admin</span>
+        </div>
+
+        <div class="stats">
+            <div class="card" style="border-top-color: var(--success);">
+                <i class="fas fa-users"></i>
+                <h3>Volunteers</h3>
+                <h1>{{ volunteers }}</h1>
+            </div>
+            <div class="card" style="border-top-color: var(--secondary);">
+                <i class="fas fa-house-damage"></i>
+                <h3>Disasters</h3>
+                <h1>{{ disasters }}</h1>
+            </div>
+            <div class="card" style="border-top-color: #457b9d;">
+                <i class="fas fa-campground"></i>
+                <h3>Relief Camps</h3>
+                <h1>{{ camps }}</h1>
+            </div>
+        </div>
+
+        <div class="section-card" id="requests">
+            <h2 style="margin-top:0; color: var(--secondary);"><i class="fas fa-exclamation-triangle"></i> Emergency Help Requests</h2>
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>Victim Name</th><th>Phone</th><th>Help Type</th><th>Location</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for req in help_requests %}
+                    <tr>
+                        <td>{{ req[0] }}</td>
+                        <td>{{ req[1] }}</td>
+                        <td>{{ req[2] }}</td>
+                        <td><strong>{{ req[3] }}</strong></td>
+                        <td><a href="https://www.google.com/maps?q={{ req[4] }},{{ req[5] }}" target="_blank" class="btn btn-view"><i class="fas fa-map-marker-alt"></i> Map</a></td>
+                        <td><span class="status-{{ req[6] }}">{{ req[6] }}</span></td>
+                        <td>{{ req[7] if req[7] else 'None' }}</td>
+                        <td>
+                            {% if req[6] == 'Pending' %}
+                            <form id="assign-form-{{ req[0] }}" action="/auto_assign/{{ req[0] }}" method="POST" style="display:inline;">
+                                <button type="button" class="btn btn-update" onclick="confirmAssign('assign-form-{{ req[0] }}')" title="Auto Assign"><i class="fas fa-robot"></i></button>
+                            </form>
+                            {% endif %}
+                            <form id="delete-req-{{ req[0] }}" action="/delete_request/{{ req[0] }}" method="POST" style="display:inline;">
+                                <button type="button" class="btn btn-delete" onclick="confirmDelete('delete-req-{{ req[0] }}', 'Delete this request?')" title="Delete Request"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-card" id="volunteers">
+            <h2 style="margin-top:0;"><i class="fas fa-user-plus"></i> Volunteer Management</h2>
+            <form method="POST" action="/add_volunteer" style="background: var(--bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <input type="text" name="name" placeholder="Full Name" required>
+                <input type="text" name="phone" placeholder="Phone Number" required>
+                <input type="email" name="email" placeholder="Email Address" required>
+                <input type="text" name="city" placeholder="City" required>
+                <input type="text" name="latitude" placeholder="Latitude (e.g. 12.97)" required>
+                <input type="text" name="longitude" placeholder="Longitude (e.g. 77.59)" required>
+                <br>
+                <button type="submit" class="add-btn"><i class="fas fa-plus"></i> Add Volunteer</button>
+            </form>
+
+            <table>
+                <tr><th>Name</th><th>Phone</th><th>City</th><th>Actions</th></tr>
+                {% for vol in volunteer_list %}
+                <tr>
+                    <td>{{ vol[1] }}</td>
+                    <td>{{ vol[2] }}</td>
+                    <td>{{ vol[3] }}</td>
+                    <td>
+                        <button class="btn btn-update" title="Edit" onclick="editVolunteer('{{ vol[0] }}', '{{ vol[2] }}', '{{ vol[3] }}')"><i class="fas fa-pen"></i></button>
+                        <form id="delete-vol-{{ loop.index }}" action="/delete_volunteer/{{ vol[0] }}" method="POST" style="display:inline;">
+                            <button type="button" class="btn btn-delete" onclick="confirmDelete('delete-vol-{{ loop.index }}', 'Delete volunteer {{ vol[1] }}?')" title="Remove"><i class="fas fa-user-minus"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    // SweetAlert Interceptors
+    function confirmDelete(formId, text) {
+        Swal.fire({ title: 'Are you sure?', text: text, icon: 'warning', showCancelButton: true, confirmButtonColor: '#e63946', cancelButtonColor: '#457b9d', confirmButtonText: 'Yes, delete it!'
+        }).then((result) => { if (result.isConfirmed) document.getElementById(formId).submit(); });
+    }
+
+    function confirmAssign(formId) {
+        Swal.fire({ title: 'Auto-Assign Nearest Volunteer?', text: "System will locate and assign the nearest available volunteer based on coordinates.", icon: 'info', showCancelButton: true, confirmButtonColor: '#2a9d8f', confirmButtonText: 'Assign Now'
+        }).then((result) => { if (result.isConfirmed) document.getElementById(formId).submit(); });
+    }
+
+    function editVolunteer(volId, currentPhone, currentCity) {
+        Swal.fire({
+            title: 'Edit Volunteer Data',
+            html: `<form id="edit-vol-form" action="/edit_volunteer/${volId}" method="POST" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+                    <input type="text" name="phone" class="swal2-input" style="margin:0; width:auto;" value="${currentPhone}" placeholder="Phone Number" required>
+                    <input type="text" name="city" class="swal2-input" style="margin:0; width:auto;" value="${currentCity}" placeholder="City" required>
+                  </form>`,
+            showCancelButton: true, confirmButtonText: 'Update', preConfirm: () => { document.getElementById('edit-vol-form').submit(); }
+        });
+    }
+
+    // Toast Notifications
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('msg')) {
+        const msg = urlParams.get('msg');
+        let title = 'Success';
+        if (msg === 'deleted' || msg === 'req_deleted') title = '🗑️ Deleted successfully!';
+        if (msg === 'assigned') title = '✅ Volunteer Auto-Assigned!';
+        if (msg === 'vol_added') title = '✅ Volunteer Added!';
+        if (msg === 'vol_updated') title = '✅ Volunteer Updated!';
+
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: title, showConfirmButton: false, timer: 3500, timerProgressBar: true });
+        window.history.replaceState({}, document.title, "/admin_dashboard");
+    }
+    if (urlParams.has('error')) {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: urlParams.get('error') === 'no_volunteers' ? 'No nearby volunteers found' : 'Action failed', showConfirmButton: false, timer: 3500 });
+        window.history.replaceState({}, document.title, "/admin_dashboard");
+    }
+
+    // Live Refresh Loop
+    let knownIds = new Set();
+    let isFirstLoad = true;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('#requests table tbody tr').forEach(tr => {
+            let idCell = tr.querySelector('td');
+            if (idCell && !isNaN(parseInt(idCell.innerText))) {
+                knownIds.add(parseInt(idCell.innerText));
+            }
+        });
+        isFirstLoad = false;
+    });
+
+    setInterval(() => {
+        fetch('/api/get_requests').then(res => res.json()).then(data => { if(data.requests) updateTable(data.requests); });
+    }, 5000);
+
+    function updateTable(requests) {
+        const tbody = document.querySelector('#requests table tbody');
+        if(!tbody) return;
+        let rows = '';
+        let newRequestsFound = false;
+
+        requests.forEach(req => {
+            let isNew = !isFirstLoad && !knownIds.has(req.id);
+            if (isNew) { newRequestsFound = true; }
+            knownIds.add(req.id);
+
+            rows += `<tr class="${isNew ? 'highlight-new' : ''}">
+                <td>${req.id}</td><td>${req.name}</td><td>${req.phone}</td><td><strong>${req.help_type}</strong></td>
+                <td><a href="https://www.google.com/maps?q=${req.latitude},${req.longitude}" target="_blank" class="btn btn-view"><i class="fas fa-map-marker-alt"></i> Map</a></td>
+                <td><span class="status-${req.status}">${req.status}</span></td><td>${req.assigned_volunteer || 'None'}</td>
+                <td>
+                    ${req.status === 'Pending' ? `<form id="assign-form-${req.id}" action="/auto_assign/${req.id}" method="POST" style="display:inline;">
+                        <button type="button" class="btn btn-update" onclick="confirmAssign('assign-form-${req.id}')" title="Auto Assign"><i class="fas fa-robot"></i></button></form>` : ''}
+                    <form id="delete-req-${req.id}" action="/delete_request/${req.id}" method="POST" style="display:inline;">
+                        <button type="button" class="btn btn-delete" onclick="confirmDelete('delete-req-${req.id}', 'Delete request ID ${req.id}?')" title="Delete Request"><i class="fas fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = rows;
+        
+        if (newRequestsFound) {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: '🚨 New help request received!', showConfirmButton: false, timer: 5000 });
+            let audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+            audio.play().catch(e => console.log("Audio autoplay blocked by browser"));
+        }
+        isFirstLoad = false;
+    }
+    </script>
+</body>
+</html>
